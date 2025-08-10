@@ -1,8 +1,10 @@
+require('dotenv').config(); 
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./src/config/database');
-require('dotenv').config(); 
 const publicRoutes = require('./src/routes/public.routes.js');
+const authRoutes = require('./src/routes/auth.routes.js');
+const adminRoutes = require('./src/routes/admin.routes.js');
 
 const app = express();
 
@@ -10,7 +12,12 @@ const app = express();
 app.use(cors()); 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+
+
 app.use('/api', publicRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 
 
 connectDB();
