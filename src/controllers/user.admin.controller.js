@@ -3,16 +3,16 @@ const User = require('../models/user.model');
 // @desc    Create a new admin/staff user
 exports.createAdminUser = async (req, res) => {
   try {
-    const { email, password, role } = req.body;
+    const { name, email, password, role } = req.body;
     // Check if user already exists
     let user = await User.findOne({ email });
     if (user) {
       return res.status(400).json({ message: 'User already exists' });
     }
     // Create new user (password will be hashed by the pre-save hook)
-    user = await User.create({ email, password, role });
+    user = await User.create({ name, email, password, role });
     // Don't send the password back in the response
-    const userResponse = { _id: user._id, email: user.email, role: user.role };
+    const userResponse = { _id: user._id, name: user.name, email: user.email, role: user.role };
     res.status(201).json(userResponse);
   } catch (err) {
     res.status(400).json({ message: 'Error creating user' });
