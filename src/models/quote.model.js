@@ -22,6 +22,12 @@ const quoteSchema = new mongoose.Schema({
   notes: { type: String, trim: true },
   appointmentDate: Date,
   appointmentSlot: String,
+    appointmentDate: {
+    type: Date,
+  },
+  appointmentSlot: {
+    type: String, 
+  },
   createdAt: { type: Date, default: Date.now },
 });
 
