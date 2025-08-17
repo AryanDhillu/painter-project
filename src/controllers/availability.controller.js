@@ -1,15 +1,12 @@
-// Import the Quote model
 const Quote = require('../models/quote.model');
-// Import the necessary functions from the date-fns library
-const { addDays, format, isBefore } = require('date-fns');
+const { addDays, format, startOfToday } = require('date-fns');
 
 // Controller function to get all BOOKED appointment slots
 exports.getAvailability = async (req, res) => {
   try {
     // --- Date Setup (Timezone Independent) ---
-    // 1. Get the start of today in UTC. This is a more robust method.
-    const now = new Date();
-    const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    // 1. Get the start of today in UTC.
+    const today = startOfToday();
 
     // 2. Calculate the end of our date range (30 days from today).
     const oneMonthFromNow = addDays(today, 30);
@@ -21,7 +18,7 @@ exports.getAvailability = async (req, res) => {
         $gte: today,
         $lt: oneMonthFromNow,
       },
-    }).select('appointmentDate appointmentSlot').sort({ appointmentDate: 1 }); // Sort by date for a clean response
+    }).select('appointmentDate appointmentSlot').sort({ appointmentDate: 1 });
 
     // --- Grouping Booked Slots by Date ---
     // 4. This object will hold the final response.
@@ -37,7 +34,7 @@ exports.getAvailability = async (req, res) => {
         bookedSlotsByDate[dateStr] = [];
       }
       
-      // 7. Add the booked time slot to the array for that date.
+      // 7. Add the booked time slot index to the array for that date.
       bookedSlotsByDate[dateStr].push(appt.appointmentSlot);
     }
 

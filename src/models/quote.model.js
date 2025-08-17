@@ -20,13 +20,11 @@ const quoteSchema = new mongoose.Schema({
   status: { type: String, default: 'pending', enum: ['pending', 'reviewed', 'quoted', 'accepted', 'declined'] },
   estimatedCost: { type: Number, min: 0 },
   notes: { type: String, trim: true },
-  appointmentDate: Date,
-  appointmentSlot: String,
     appointmentDate: {
     type: Date,
   },
   appointmentSlot: {
-    type: String, 
+    type: Number, 
   },
   createdAt: { type: Date, default: Date.now },
 });
