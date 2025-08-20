@@ -13,6 +13,7 @@ router.get('/reviews/approved', reviewController.getApprovedReviews);
 router.get('/faqs', faqController.getAllFaqs);
 router.post('/quotes', quoteController.createQuote);
 router.get('/appointments/availability', availabilityController.getAvailability);
+router.post('/reviews', reviewController.createReview);
 
 
 module.exports = router;
