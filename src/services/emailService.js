@@ -1,14 +1,18 @@
 const nodemailer = require('nodemailer');
 const { format } = require('date-fns');
 
-// Configure the email transporter using your .env variables
+// --- THIS IS THE UPDATED CONFIGURATION ---
+// It's more explicit and often works better in serverless environments.
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true, // true for 465, false for other ports
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
 });
+// ------------------------------------------
 
 // The updated function now accepts a 'type' parameter
 const sendAppointmentEmail = async (toEmail, name, date, slotIndex, type = 'new') => {
@@ -16,8 +20,6 @@ const sendAppointmentEmail = async (toEmail, name, date, slotIndex, type = 'new'
   const time = timeSlots[slotIndex];
   const formattedDate = format(new Date(date), 'EEEE, MMMM do, yyyy');
 
-  // --- THIS IS THE NEW LOGIC ---
-  // Define subject and message based on the 'type'
   let subject = '';
   let message = '';
 
@@ -28,12 +30,11 @@ const sendAppointmentEmail = async (toEmail, name, date, slotIndex, type = 'new'
     subject = 'Your Appointment Confirmation';
     message = '<p>This is a confirmation that your appointment has been scheduled with The Painter Guys Pros.</p>';
   }
-  // ---------------------------
 
   const mailOptions = {
     from: `"The Painter Guys Pros" <${process.env.EMAIL_USER}>`,
     to: toEmail,
-    subject: subject, // Use the dynamic subject
+    subject: subject,
     html: `
       <p>Hi ${name},</p>
       ${message} 
