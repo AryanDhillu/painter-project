@@ -26,7 +26,18 @@ const quoteSchema = new mongoose.Schema({
   appointmentSlot: {
     type: Number, 
   },
+    rescheduleRequest: {
+    requestedDate: { type: Date },
+    requestedSlot: { type: Number },
+    status: { 
+      type: String, 
+      enum: ['pending', 'approved', 'denied'],
+      default: null 
+    },
+    token: { type: String } // To secure the reschedule link
+  },
   createdAt: { type: Date, default: Date.now },
+
 });
 
 const Quote = mongoose.model('Quote', quoteSchema);

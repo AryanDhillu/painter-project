@@ -14,6 +14,8 @@ router.get('/faqs', faqController.getAllFaqs);
 router.post('/quotes', quoteController.createQuote);
 router.get('/appointments/availability', availabilityController.getAvailability);
 router.post('/reviews', reviewController.createReview);
+router.post('/reschedule/:token', quoteController.requestReschedule);
+
 
 
 module.exports = router;
