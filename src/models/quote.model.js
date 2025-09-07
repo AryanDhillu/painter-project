@@ -17,7 +17,7 @@ const quoteSchema = new mongoose.Schema({
       path: String,
       mimetype: String
   }],
-  status: { type: String, default: 'pending', enum: ['pending', 'reviewed', 'quoted', 'accepted', 'declined'] },
+  status: { type: String, default: 'pending', enum: ['pending', 'reviewed', 'quoted', 'completed', 'declined'] },
   estimatedCost: { type: Number, min: 0 },
   notes: { type: String, trim: true },
     appointmentDate: {

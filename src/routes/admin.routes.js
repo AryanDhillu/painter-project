@@ -17,6 +17,7 @@ router.use(authMiddleware);
 // Quote routes
 router.get('/quotes', quoteAdminController.getAdminQuotes);
 router.put('/quotes/:id', quoteAdminController.updateQuote);
+router.delete('/quotes/:id', quoteAdminController.deleteQuote);
 
 // Gallery Routes 
 router.post('/gallery', galleryAdminController.createGalleryItem);

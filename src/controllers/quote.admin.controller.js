@@ -46,3 +46,32 @@ exports.updateQuote = async (req, res) => {
   }
 };
 
+
+
+
+// @desc    Delete a quote only if its status is 'completed'
+exports.deleteQuote = async (req, res) => {
+  try {
+    // 1. Find the quote by its ID to check its status
+    const quote = await Quote.findById(req.params.id);
+
+    if (!quote) {
+      return res.status(404).json({ message: 'Quote not found' });
+    }
+
+    // 2. Enforce the business rule: only delete 'completed' quotes
+    if (quote.status !== 'completed') {
+      return res.status(400).json({ 
+        message: `Cannot delete. Quote status is '${quote.status}', not 'completed'.` 
+      });
+    }
+
+    // 3. If the status is correct, proceed with deletion
+    await Quote.findByIdAndDelete(req.params.id);
+
+    res.json({ message: 'Quote deleted successfully.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
