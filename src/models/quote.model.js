@@ -20,13 +20,13 @@ const quoteSchema = new mongoose.Schema({
   status: { type: String, default: 'pending', enum: ['pending', 'reviewed', 'quoted', 'completed', 'declined'] },
   estimatedCost: { type: Number, min: 0 },
   notes: { type: String, trim: true },
-    appointmentDate: {
+  appointmentDate: {
     type: Date,
   },
   appointmentSlot: {
     type: Number, 
   },
-    rescheduleRequest: {
+  rescheduleRequest: {
     requestedDate: { type: Date },
     requestedSlot: { type: Number },
     status: { 
@@ -36,9 +36,12 @@ const quoteSchema = new mongoose.Schema({
     },
     token: { type: String } // To secure the reschedule link
   },
-  createdAt: { type: Date, default: Date.now },
-
+  // The manual createdAt field is removed
+}, {
+  // This option tells Mongoose to automatically add createdAt and updatedAt fields.
+  timestamps: true 
 });
 
 const Quote = mongoose.model('Quote', quoteSchema);
 module.exports = Quote;
+
