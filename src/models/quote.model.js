@@ -12,15 +12,15 @@ const quoteSchema = new mongoose.Schema({
   timeframe: { type: String, required: true, enum: ['asap', '1-2weeks', '1month', '2-3months', 'flexible'] },
   budget: { type: String, required: true, enum: ['under-1000', '1000-3000', '3000-5000', '5000-10000', 'over-10000'] },
   description: { type: String, trim: true },
-  
-  // This is corrected to match the Firebase URL array
-  images: [String], 
-
+  images: [{
+      filename: String,
+      path: String,
+      mimetype: String
+  }],
   status: { 
     type: String, 
     default: 'pending', 
-    // "accepted" is also a valid status in the workflow
-    enum: ['pending', 'reviewed', 'quoted', 'accepted', 'declined', 'completed'] 
+    enum: ['pending', 'reviewed', 'quoted', 'completed', 'declined', 'accepted'] 
   },
   estimatedCost: { type: Number, min: 0 },
   notes: { type: String, trim: true },
