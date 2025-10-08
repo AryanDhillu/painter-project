@@ -19,6 +19,11 @@ router.get('/quotes', quoteAdminController.getAdminQuotes);
 router.put('/quotes/:id', quoteAdminController.updateQuote);
 router.delete('/quotes/:id', quoteAdminController.deleteQuote);
 
+// --- NEW RESCHEDULE MANAGEMENT ROUTES ---
+router.put('/quotes/:id/mark-seen', quoteAdminController.markRescheduleAsSeen);
+router.put('/quotes/:id/handle-reschedule', quoteAdminController.handleRescheduleRequest);
+// ------------------------------------
+
 // Gallery Routes 
 router.post('/gallery', galleryAdminController.createGalleryItem);
 router.put('/gallery/:id', galleryAdminController.updateGalleryItem);
@@ -43,3 +48,4 @@ router.delete('/users/:id', [isOwner], userAdminController.deleteAdminUser);
 
 
 module.exports = router;
+

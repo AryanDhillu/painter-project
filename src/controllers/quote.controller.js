@@ -1,6 +1,7 @@
 const Quote = require('../models/quote.model');
 const { sendAppointmentEmail } = require('../services/emailService');
 
+// @desc    Customer creates a new quote
 exports.createQuote = async (req, res) => {
   const { appointmentDate, appointmentSlot } = req.body;
 
@@ -11,6 +12,7 @@ exports.createQuote = async (req, res) => {
         appointmentDate: new Date(appointmentDate),
         appointmentSlot: appointmentSlot
       });
+
       if (existingAppointment) {
         return res.status(409).json({
           message: 'This time slot is no longer available. Please select another.'
@@ -28,12 +30,13 @@ exports.createQuote = async (req, res) => {
       delete quoteData.appointmentDate;
       delete quoteData.appointmentSlot;
     }
+
     const newQuote = await Quote.create(quoteData);
 
-    // If the new quote has an appointment, send the email
+    // If the new quote has an appointment, send the confirmation email
     if (newQuote.appointmentDate && newQuote.appointmentSlot !== undefined) {
       sendAppointmentEmail(
-        newQuote._id, // <-- Pass the new quote's ID
+        newQuote._id, // Pass the new quote's ID
         newQuote.email,
         newQuote.name,
         newQuote.appointmentDate,
@@ -48,7 +51,7 @@ exports.createQuote = async (req, res) => {
   }
 };
 
-// @desc    Customer submits a reschedule request, which now directly updates the appointment
+// @desc    Customer submits a reschedule request for admin approval
 exports.requestReschedule = async (req, res) => {
   try {
     const { token } = req.params;
@@ -61,42 +64,18 @@ exports.requestReschedule = async (req, res) => {
       return res.status(404).json({ message: 'Invalid or expired reschedule link.' });
     }
 
-    // 2. Perform a conflict check for the new requested time
-    const existingAppointment = await Quote.findOne({
-      appointmentDate: new Date(requestedDate),
-      appointmentSlot: requestedSlot,
-      _id: { $ne: quote._id } // Make sure we don't conflict with the quote itself
-    });
-
-    if (existingAppointment) {
-      return res.status(409).json({
-        message: 'Sorry, that new time slot was just taken. Please try another.'
-      });
-    }
-
-    // 3. If the slot is free, directly update the main appointment details
-    quote.appointmentDate = new Date(requestedDate);
-    quote.appointmentSlot = requestedSlot;
-
-    // 4. Invalidate the token and mark as handled
-    quote.rescheduleRequest.token = null;
-    quote.rescheduleRequest.status = 'approved'; 
+    // 2. Update the quote with the requested details and mark as "unseen" for the admin
+    quote.rescheduleRequest.requestedDate = new Date(requestedDate);
+    quote.rescheduleRequest.requestedSlot = requestedSlot;
+    quote.rescheduleRequest.status = 'pending';
+    quote.rescheduleRequest.seenByAdmin = false; // Mark as UNSEEN
+    quote.rescheduleRequest.token = null; // Invalidate the link so it can't be used again
 
     await quote.save();
 
-    // 5. Optionally, send a final confirmation email for the successful reschedule
-    // This will use the 'updated' template but won't generate a new reschedule link
-    sendAppointmentEmail(
-      quote._id,
-      quote.email,
-      quote.name,
-      quote.appointmentDate,
-      quote.appointmentSlot,
-      'updated' 
-    );
+    // Optionally, you could send an email to the admin here to notify them of the request.
 
-    res.json({ message: 'Your appointment has been successfully rescheduled.' });
-
+    res.json({ message: 'Your reschedule request has been submitted. The admin will review it shortly.' });
   } catch (err) {
     console.error('Reschedule Error:', err);
     res.status(500).json({ message: 'Server Error' });

@@ -11,7 +11,7 @@ exports.getAdminQuotes = async (req, res) => {
   }
 };
 
-// @desc    Update a quote
+// @desc    Update a quote's general details
 exports.updateQuote = async (req, res) => {
   try {
     // 1. Find the quote first to ensure we have the full document
@@ -46,30 +46,84 @@ exports.updateQuote = async (req, res) => {
   }
 };
 
-
-
-
 // @desc    Delete a quote only if its status is 'completed'
 exports.deleteQuote = async (req, res) => {
   try {
-    // 1. Find the quote by its ID to check its status
     const quote = await Quote.findById(req.params.id);
 
     if (!quote) {
       return res.status(404).json({ message: 'Quote not found' });
     }
 
-    // 2. Enforce the business rule: only delete 'completed' quotes
     if (quote.status !== 'completed') {
       return res.status(400).json({ 
         message: `Cannot delete. Quote status is '${quote.status}', not 'completed'.` 
       });
     }
 
-    // 3. If the status is correct, proceed with deletion
     await Quote.findByIdAndDelete(req.params.id);
 
     res.json({ message: 'Quote deleted successfully.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// --- NEW FUNCTION ---
+// @desc    Admin marks a reschedule request as "seen"
+exports.markRescheduleAsSeen = async (req, res) => {
+  try {
+    const quote = await Quote.findById(req.params.id);
+    if (!quote || !quote.rescheduleRequest || quote.rescheduleRequest.status !== 'pending') {
+      return res.status(400).json({ message: 'No pending reschedule request to mark as seen.' });
+    }
+    
+    quote.rescheduleRequest.seenByAdmin = true;
+    const updatedQuote = await quote.save();
+    
+    res.json(updatedQuote);
+  } catch (err) {
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// --- NEW FUNCTION ---
+// @desc    Admin approves or denies a customer's reschedule request
+exports.handleRescheduleRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { action } = req.body; // Expects 'approve' or 'deny'
+
+    const quote = await Quote.findById(id);
+    if (!quote || !quote.rescheduleRequest || quote.rescheduleRequest.status !== 'pending') {
+      return res.status(400).json({ message: 'No pending reschedule request found for this quote.' });
+    }
+
+    if (action === 'approve') {
+      const existing = await Quote.findOne({
+        appointmentDate: quote.rescheduleRequest.requestedDate,
+        appointmentSlot: quote.rescheduleRequest.requestedSlot,
+        _id: { $ne: id } 
+      });
+
+      if (existing) {
+        return res.status(409).json({ message: 'Conflict: The requested slot is already booked.' });
+      }
+
+      quote.appointmentDate = quote.rescheduleRequest.requestedDate;
+      quote.appointmentSlot = quote.rescheduleRequest.requestedSlot;
+      quote.rescheduleRequest.status = 'approved';
+      
+      sendAppointmentEmail(quote._id, quote.email, quote.name, quote.appointmentDate, quote.appointmentSlot, 'reschedule_confirmed');
+    } else if (action === 'deny') {
+      quote.rescheduleRequest.status = 'denied';
+      // Optionally, send a denial email here
+    } else {
+      return res.status(400).json({ message: 'Invalid action provided.' });
+    }
+    
+    const updatedQuote = await quote.save();
+    res.json(updatedQuote);
   } catch (err) {
     res.status(500).json({ message: 'Server Error' });
   }
