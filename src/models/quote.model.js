@@ -30,6 +30,10 @@ const quoteSchema = new mongoose.Schema({
   appointmentSlot: {
     type: Number, 
   },
+
+  // This field tracks if a brand new quote has been seen by an admin
+  viewedByAdmin: { type: Boolean, default: false },
+
   rescheduleRequest: {
     requestedDate: { type: Date },
     requestedSlot: { type: Number },
@@ -39,7 +43,7 @@ const quoteSchema = new mongoose.Schema({
       default: null 
     },
     token: { type: String },
-    // This field is added to track the "seen/unseen" status
+    // This field is added to track the "seen/unseen" status for a reschedule
     seenByAdmin: { type: Boolean, default: false }
   },
 }, {

@@ -14,20 +14,13 @@ exports.getAdminQuotes = async (req, res) => {
 // @desc    Update a quote's general details
 exports.updateQuote = async (req, res) => {
   try {
-    // 1. Find the quote first to ensure we have the full document
     const quote = await Quote.findById(req.params.id);
-
     if (!quote) {
       return res.status(404).json({ message: 'Quote not found' });
     }
-
-    // 2. Update the fields from the request body
     Object.assign(quote, req.body);
-
-    // 3. Save the updated quote
     const updatedQuote = await quote.save();
 
-    // 4. Check if an appointment was part of this update to send an email
     const { appointmentDate, appointmentSlot } = req.body;
     if (appointmentDate && appointmentSlot !== undefined) {
       sendAppointmentEmail(
@@ -39,7 +32,6 @@ exports.updateQuote = async (req, res) => {
         'updated'
       );
     }
-
     res.json(updatedQuote);
   } catch (err) {
     res.status(500).json({ message: 'Server Error', error: err.message });
@@ -50,26 +42,38 @@ exports.updateQuote = async (req, res) => {
 exports.deleteQuote = async (req, res) => {
   try {
     const quote = await Quote.findById(req.params.id);
-
     if (!quote) {
       return res.status(404).json({ message: 'Quote not found' });
     }
-
     if (quote.status !== 'completed') {
       return res.status(400).json({ 
         message: `Cannot delete. Quote status is '${quote.status}', not 'completed'.` 
       });
     }
-
     await Quote.findByIdAndDelete(req.params.id);
-
     res.json({ message: 'Quote deleted successfully.' });
   } catch (err) {
     res.status(500).json({ message: 'Server Error' });
   }
 };
 
-// --- NEW FUNCTION ---
+// @desc    Admin marks a newly created quote as "viewed"
+exports.markQuoteAsViewed = async (req, res) => {
+  try {
+    const quote = await Quote.findById(req.params.id);
+    if (!quote) {
+      return res.status(404).json({ message: 'Quote not found.' });
+    }
+    
+    quote.viewedByAdmin = true;
+    const updatedQuote = await quote.save();
+    
+    res.json(updatedQuote);
+  } catch (err) {
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
 // @desc    Admin marks a reschedule request as "seen"
 exports.markRescheduleAsSeen = async (req, res) => {
   try {
@@ -87,7 +91,6 @@ exports.markRescheduleAsSeen = async (req, res) => {
   }
 };
 
-// --- NEW FUNCTION ---
 // @desc    Admin approves or denies a customer's reschedule request
 exports.handleRescheduleRequest = async (req, res) => {
   try {
@@ -117,7 +120,6 @@ exports.handleRescheduleRequest = async (req, res) => {
       sendAppointmentEmail(quote._id, quote.email, quote.name, quote.appointmentDate, quote.appointmentSlot, 'reschedule_confirmed');
     } else if (action === 'deny') {
       quote.rescheduleRequest.status = 'denied';
-      // Optionally, send a denial email here
     } else {
       return res.status(400).json({ message: 'Invalid action provided.' });
     }
