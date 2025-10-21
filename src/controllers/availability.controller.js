@@ -1,47 +1,63 @@
 const Quote = require('../models/quote.model');
-const { addDays, format, startOfToday } = require('date-fns');
+const BlockedSlot = require('../models/blockedSlot.model'); // <-- IMPORT NEW MODEL
+const { addDays, format, isBefore, startOfToday } = require('date-fns');
 
-// Controller function to get all BOOKED appointment slots
+const TIME_SLOTS = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00"];
+
 exports.getAvailability = async (req, res) => {
   try {
-    // --- Date Setup (Timezone Independent) ---
-    // 1. Get the start of today in UTC.
     const today = startOfToday();
-
-    // 2. Calculate the end of our date range (30 days from today).
     const oneMonthFromNow = addDays(today, 30);
 
-    // --- Fetching Booked Slots ---
-    // 3. Query the database for all existing appointments within the 30-day window.
+    // 1. Get appointments from the Quotes collection
     const existingAppointments = await Quote.find({
-      appointmentDate: {
-        $gte: today,
-        $lt: oneMonthFromNow,
-      },
-    }).select('appointmentDate appointmentSlot').sort({ appointmentDate: 1 });
+      appointmentDate: { $gte: today, $lt: oneMonthFromNow },
+    }).select('appointmentDate appointmentSlot');
 
-    // --- Grouping Booked Slots by Date ---
-    // 4. This object will hold the final response.
-    const bookedSlotsByDate = {};
+    // 2. Get admin-blocked slots from the new collection
+    const adminBlocks = await BlockedSlot.find({
+      date: { $gte: today, $lt: oneMonthFromNow },
+    });
 
-    // 5. Loop through each appointment we found in the database.
-    for (const appt of existingAppointments) {
-      // Format the date from the DB to a 'yyyy-MM-dd' string.
-      const dateStr = format(new Date(appt.appointmentDate), 'yyyy-MM-dd');
-      
-      // 6. If we haven't seen this date yet, create an empty array for it.
-      if (!bookedSlotsByDate[dateStr]) {
-        bookedSlotsByDate[dateStr] = [];
+    // 3. Combine both sets into one master list of unavailable slots
+    const bookedSlots = new Set(
+      existingAppointments.map(appt => {
+        const dateStr = format(new Date(appt.appointmentDate), 'yyyy-MM-dd');
+        return `${dateStr}_${appt.appointmentSlot}`;
+      })
+    );
+    
+    adminBlocks.forEach(block => {
+        const dateStr = format(new Date(block.date), 'yyyy-MM-dd');
+        block.slots.forEach(slotIndex => {
+            bookedSlots.add(`${dateStr}_${slotIndex}`);
+        });
+    });
+
+    // 4. Generate and filter available slots (this logic remains the same)
+    const availableSlots = {};
+    let currentDate = new Date(today);
+
+    while (isBefore(currentDate, oneMonthFromNow)) {
+      const dateStr = format(currentDate, 'yyyy-MM-dd');
+      const daySlots = [];
+
+      for (let i = 0; i < TIME_SLOTS.length; i++) {
+        if (!bookedSlots.has(`${dateStr}_${i}`)) {
+          daySlots.push(i);
+        }
       }
       
-      // 7. Add the booked time slot index to the array for that date.
-      bookedSlotsByDate[dateStr].push(appt.appointmentSlot);
+      if (daySlots.length > 0) {
+        availableSlots[dateStr] = daySlots;
+      }
+      currentDate = addDays(currentDate, 1);
     }
 
-    // 8. Send the final object of booked slots.
-    res.json(bookedSlotsByDate);
+    res.json(availableSlots);
   } catch (error) {
-    console.error("Error fetching booked slots:", error);
-    res.status(500).json({ message: 'Error fetching booked slots' });
+    console.error("Error fetching availability:", error);
+    res.status(500).json({ message: 'Error fetching availability' });
   }
 };
+
