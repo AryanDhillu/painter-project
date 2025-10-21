@@ -12,7 +12,7 @@ router.get('/gallery', galleryController.getAllGalleryItems);
 router.get('/reviews/approved', reviewController.getApprovedReviews);
 router.get('/faqs', faqController.getAllFaqs);
 router.post('/quotes', quoteController.createQuote);
-router.get('/appointments/availability', availabilityController.getAvailability);
+router.get('/appointments/availability', availabilityController.getOccupiedSlots); 
 router.post('/reviews', reviewController.createReview);
 router.post('/reschedule/:token', quoteController.requestReschedule);
 
