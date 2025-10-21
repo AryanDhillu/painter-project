@@ -20,7 +20,7 @@ const quoteSchema = new mongoose.Schema({
   status: { 
     type: String, 
     default: 'pending', 
-    enum: ['pending', 'reviewed', 'quoted', 'completed', 'declined', 'accepted'] 
+    enum: ['pending', 'reviewed', 'quoted', 'accepted', 'declined', 'completed'] 
   },
   estimatedCost: { type: Number, min: 0 },
   notes: { type: String, trim: true },
@@ -30,8 +30,8 @@ const quoteSchema = new mongoose.Schema({
   appointmentSlot: {
     type: Number, 
   },
-
-  // This field tracks if a brand new quote has been seen by an admin
+  
+  // Tracks if a brand new quote has been seen by an admin
   viewedByAdmin: { type: Boolean, default: false },
 
   rescheduleRequest: {
@@ -43,7 +43,7 @@ const quoteSchema = new mongoose.Schema({
       default: null 
     },
     token: { type: String },
-    // This field is added to track the "seen/unseen" status for a reschedule
+    // Tracks if a reschedule request has been seen by an admin
     seenByAdmin: { type: Boolean, default: false }
   },
 }, {
