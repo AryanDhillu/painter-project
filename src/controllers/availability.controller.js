@@ -52,38 +52,13 @@ exports.getAvailableSlots = async (req, res) => {
     const blockedPromise = fetchBlockedSlots(today, futureDate);
     const [bookedSlots, adminBlockedSlots] = await Promise.all([bookedPromise, blockedPromise]);
 
-    // Combine into a single Set of unavailable slots for efficient lookup
-    const unavailableSlotsSet = new Set();
-    for (const date in bookedSlots) {
-        bookedSlots[date].forEach(slot => unavailableSlotsSet.add(`${date}_${slot}`));
-    }
-    for (const date in adminBlockedSlots) {
-        adminBlockedSlots[date].forEach(slot => unavailableSlotsSet.add(`${date}_${slot}`));
-    }
+    // Instead of filtering or merging, just send them as they are
+    const result = {
+      bookedSlots,
+      adminBlockedSlots
+    };
 
-    // Generate all possible slots and filter out the unavailable ones
-    const availableSlotsResult = {};
-    let currentDate = new Date(today);
-
-    while (isBefore(currentDate, futureDate)) {
-      const dateStr = format(currentDate, 'yyyy-MM-dd');
-      const daySlots = [];
-
-      for (let i = 0; i < TIME_SLOTS.length; i++) {
-        // If the slot is NOT in the unavailable set, add it
-        if (!unavailableSlotsSet.has(`${dateStr}_${i}`)) {
-          daySlots.push(i);
-        }
-      }
-
-      // Only include dates that have at least one available slot
-      if (daySlots.length > 0) {
-        availableSlotsResult[dateStr] = daySlots;
-      }
-      currentDate = addDays(currentDate, 1);
-    }
-
-    res.json(availableSlotsResult);
+    res.json(result);
 
   } catch (error) {
     console.error("Error fetching available slots:", error);
