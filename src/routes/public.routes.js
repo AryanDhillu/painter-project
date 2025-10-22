@@ -12,7 +12,8 @@ router.get('/gallery', galleryController.getAllGalleryItems);
 router.get('/reviews/approved', reviewController.getApprovedReviews);
 router.get('/faqs', faqController.getAllFaqs);
 router.post('/quotes', quoteController.createQuote);
-router.get('/appointments/availability', availabilityController.getOccupiedSlots); 
+router.get('/appointments/availability', availabilityController.getAvailableSlots); // <-- Returns available slots
+router.get('/appointments/occupied-detailed', availabilityController.getAllOccupiedSlotsDetailed); 
 router.post('/reviews', reviewController.createReview);
 router.post('/reschedule/:token', quoteController.requestReschedule);
 
