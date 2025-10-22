@@ -43,28 +43,52 @@ const fetchBlockedSlots = async (startDate, endDate) => {
 // --- ENDPOINT 1: Get Available Slots (Previous Functionality Restored) ---
 // @desc    Get a list of available appointment slots for the next 30 days
 exports.getAvailableSlots = async (req, res) => {
-  try {
-    const today = startOfToday();
-    const futureDate = addDays(today, NUMBER_OF_DAYS);
+  try {
+    const today = startOfToday();
+    const futureDate = addDays(today, NUMBER_OF_DAYS);
 
-    // Fetch both booked and blocked slots using helpers
-    const bookedPromise = fetchBookedSlots(today, futureDate);
-    const blockedPromise = fetchBlockedSlots(today, futureDate);
-    const [bookedSlots, adminBlockedSlots] = await Promise.all([bookedPromise, blockedPromise]);
+    // Fetch both booked and blocked slots using helpers
+    const bookedPromise = fetchBookedSlots(today, futureDate);
+    const blockedPromise = fetchBlockedSlots(today, futureDate);
+    const [bookedSlots, adminBlockedSlots] = await Promise.all([bookedPromise, blockedPromise]);
 
-    // Instead of filtering or merging, just send them as they are
-    const result = {
-      bookedSlots,
-      adminBlockedSlots
-    };
+    // Create one object to hold all unavailable slots
+    const allUnavailableSlots = {};
+    
+    // We must iterate through each day to include empty days,
+    // as requested in the example.
+    let currentDate = new Date(today); // Use `new Date` to create a mutable copy
 
-    res.json(result);
+    while (isBefore(currentDate, futureDate)) {
+      const dateStr = format(currentDate, 'yyyy-MM-dd');
 
-  } catch (error) {
-    console.error("Error fetching available slots:", error);
-    res.status(500).json({ message: 'Error fetching available slots' });
-  }
+      // Get slots for this date, defaulting to empty arrays
+      const booked = bookedSlots[dateStr] || [];
+      const blocked = adminBlockedSlots[dateStr] || [];
+
+      // Combine, remove duplicates using a Set, and convert back to an array
+      const combinedSet = new Set([...booked, ...blocked]);
+      
+      // Sort the array numerically (e.g., [0, 1, 2, 6])
+      const combinedArray = Array.from(combinedSet).sort((a, b) => a - b);
+
+      // Assign to the result object
+      allUnavailableSlots[dateStr] = combinedArray;
+
+      // Move to the next day
+      currentDate = addDays(currentDate, 1);
+    }
+
+    // Return the combined and formatted data
+    res.json(allUnavailableSlots);
+
+  } catch (error) {
+    console.error("Error fetching unavailable slots:", error);
+    res.status(500).json({ message: 'Error fetching unavailable slots data' });
+  }
 };
+
+
 
 
 // --- ENDPOINT 2: Get Detailed Occupied Slots (New Functionality Kept) ---
