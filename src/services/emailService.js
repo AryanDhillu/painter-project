@@ -3,21 +3,24 @@ const { format } = require('date-fns');
 const crypto = require('crypto');
 const Quote = require('../models/quote.model');
 
-// --- THIS IS THE ROBUST NODEMAILER CONFIGURATION ---
+// --- THIS IS THE UPDATED NODEMAILER CONFIGURATION ---
+// It now uses SendGrid instead of Gmail
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true, // true for 465, false for other ports
+  host: "smtp.sendgrid.net", // SendGrid SMTP server
+  port: 587, // Port for SendGrid (or 465)
+  secure: false, // false for 587, true for 465
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
- },
+     user: "apikey", // This must be the literal string "apikey"
+    pass: process.env.SENDGRID_API_KEY, // Your API key from .env
+ },
 });
 // ------------------------------------------
 
+// This entire function is UNCHANGED.
+// It will now use the SendGrid transporter defined above.
 const sendAppointmentEmail = async (quoteId, toEmail, name, date, slotIndex, type = 'new') => {
   const timeSlots = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00"];
-  const time = timeSlots[slotIndex];
+  let time = timeSlots[slotIndex];
   const formattedDate = format(new Date(date), 'EEEE, MMMM do, yyyy');
 
   let subject = '';
@@ -46,17 +49,19 @@ const sendAppointmentEmail = async (quoteId, toEmail, name, date, slotIndex, typ
       </p>
     `;
   } else if (type === 'reschedule_confirmed') {
-    // --- THIS IS THE NEW LOGIC ---
-    subject = 'Your Rescheduled Appointment is Confirmed!';
-    message = '<p>Great news! Your requested appointment time has been approved by our team. Your new confirmed appointment details are below.</p>';
-    // We don't send a reschedule link in the final confirmation.
-  } else { // This is the 'new' case
+    // --- THIS IS THE NEW LOGIC ---
+    subject = 'Your Rescheduled Appointment is Confirmed!';
+    message = '<p>Great news! Your requested appointment time has been approved by our team. Your new confirmed appointment details are below.</p>';
+    // We don't send a reschedule link in the final confirmation.
+  } else { // This is the 'new' case
     subject = 'Your Appointment Confirmation';
     message = '<p>This is a confirmation that your appointment has been scheduled with The Painter Guys Pros.</p>';
   }
 
   const mailOptions = {
-    from: `"The Painter Guys Pros" <${process.env.EMAIL_USER}>`,
+    // IMPORTANT: Make sure the email in process.env.EMAIL_USER
+    // is the same one you verified in SendGrid.
+    from: `"The Painter Guys Pros" <${process.env.EMAIL_USER}>`, 
     to: toEmail,
     subject: subject,
     html: `
@@ -66,7 +71,7 @@ const sendAppointmentEmail = async (quoteId, toEmail, name, date, slotIndex, typ
         <p><strong>Date:</strong> ${formattedDate}</p>
         <p><strong>Time:</strong> ${time}</p>
         <p>We look forward to seeing you!</p>
-        ${rescheduleLink}
+S      ${rescheduleLink}
         <p>Best regards,<br/>The Painter Guys Pros Team</p>
       </div>
     `,
